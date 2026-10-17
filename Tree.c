@@ -109,3 +109,44 @@ void postorder(RBTree *tree, Node *node) {
 }
 
 void rb_postorder(RBTree *tree) { postorder(tree, tree->root); }
+
+void rb_rotate_left(RBTree *tree, Node *node) {
+    if (node == tree->nil || node->right == tree->nil)
+        return;
+    // get rightnode
+    Node *right_node = node->right;
+    node->right = right_node->left;
+    right_node->left = node;
+    // swap parents
+    right_node->parent = node->parent;
+    node->parent = right_node;
+    if (node->right != tree->nil)
+        node->right->parent = node;
+
+    if (right_node->parent == tree->nil)
+        tree->root = right_node;
+    else if (right_node->parent->left == node)
+        right_node->parent->left = right_node;
+    else
+        right_node->parent->right = right_node;
+}
+
+void rb_rotate_right(RBTree *tree, Node *node) {
+    if (node == tree->nil || node->left == tree->nil)
+        return;
+    Node *left_node = node->left;
+    node->left = left_node->right;
+    left_node->right = node;
+    // swap parents
+    left_node->parent = node->parent;
+    node->parent = left_node;
+    if (node->left != tree->nil)
+        node->left->parent = node;
+
+    if (left_node->parent == tree->nil)
+        tree->root = left_node;
+    else if (left_node->parent->left == node)
+        left_node->parent->left = left_node;
+    else
+        left_node->parent->right = left_node;
+}
