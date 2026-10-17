@@ -1,5 +1,14 @@
 #include "Tree.h"
 
+Node *node_create(RBTree *tree, int val) {
+    Node *node = malloc(sizeof(Node));
+    node->left = node->right = tree->nil;
+    node->parent = tree->nil;
+    node->val = val;
+    node->color = RB_RED;
+    return node;
+}
+
 void nodes_destroy(RBTree *tree, Node *node) {
     if (node == tree->nil)
         return;
@@ -18,6 +27,7 @@ RBTree *rb_tree_create() {
     tree->nil->right = NULL;
     tree->root = tree->nil;
     tree->root->parent = tree->nil;
+    tree->size = 0;
     return tree;
 }
 
@@ -149,4 +159,75 @@ void rb_rotate_right(RBTree *tree, Node *node) {
         left_node->parent->left = left_node;
     else
         left_node->parent->right = left_node;
+}
+
+bool bst_insert(RBTree *tree, Node *node) {
+    Node *curr = tree->root;
+    Node *parent = tree->nil;
+    int val = node->val;
+    while (curr != tree->nil) {
+        parent = curr;
+        if (val < curr->val)
+            curr = curr->left;
+        else
+            curr = curr->right;
+    }
+    node->parent = parent;
+    if (parent == tree->nil)
+        tree->root = node;
+    else if (val < parent->val)
+        parent->left = node;
+    else
+        parent->right = node;
+    return true;
+}
+
+bool rb_insert_fixup(RBTree *tree, Node *node) {
+    while (node->parent->color == RB_RED) {
+        Node *grand_parent = node->parent->parent;
+        // find uncle
+        Node *uncle;
+        if (grand_parent->left == node->parent) {
+            uncle = grand_parent->right;
+            if (uncle->color == RB_RED) {
+                uncle->color = node->parent->color = RB_BLACK;
+                grand_parent->color = RB_RED;
+                node = grand_parent;
+            } else {
+                if (node == node->parent->right) {
+                    node = node->parent;
+                    rb_rotate_left(tree, node);
+                }
+                node->parent->color = RB_BLACK;
+                grand_parent->color = RB_RED;
+                rb_rotate_right(tree, grand_parent);
+            }
+        } else {
+            uncle = grand_parent->left;
+            if (uncle->color == RB_RED) {
+                uncle->color = RB_BLACK;
+                node->parent->color = RB_BLACK;
+                grand_parent->color = RB_RED;
+                node = grand_parent;
+            } else {
+                if (node == node->parent->left) {
+                    node = node->parent;
+                    rb_rotate_right(tree, node);
+                }
+                node->parent->color = RB_BLACK;
+                grand_parent->color = RB_RED;
+                rb_rotate_left(tree, grand_parent);
+            }
+        }
+    }
+    tree->root->color = RB_BLACK;
+    tree->size++;
+    return true;
+}
+
+bool rb_insert(RBTree *tree, int val) {
+    Node *node = node_create(tree, val);
+    if (bst_insert(tree, node) == false)
+        return false;
+    return rb_insert_fixup(tree, node);
 }
