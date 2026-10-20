@@ -231,3 +231,114 @@ bool rb_insert(RBTree *tree, int val) {
         return false;
     return rb_insert_fixup(tree, node);
 }
+
+void rb_transplant(RBTree *tree, Node *og, Node *new) {
+    if (og == tree->nil)
+        return;
+    if (og->parent == tree->nil)
+        tree->root = new;
+    else if (og->parent->left == og)
+        og->parent->left = new;
+    else
+        og->parent->right = new;
+    new->parent = og->parent;
+}
+
+void rb_delete_fixup(RBTree *tree, Node *node) {
+    while (node != tree->root && node->color == RB_BLACK) {
+        Node *sibling;
+        Node *parent = node->parent;
+        if (node == parent->left) {
+            sibling = parent->right;
+            if (sibling->color == RB_RED) {
+                sibling->color = RB_BLACK;
+                parent->color = RB_RED;
+                rb_rotate_left(tree, parent);
+                sibling = parent->right;
+            }
+            if (sibling->left->color == sibling->right->color &&
+                sibling->right->color == RB_BLACK) {
+                sibling->color = RB_RED;
+                node = parent;
+            } else {
+                if (sibling->right->color == RB_BLACK) {
+                    sibling->left->color = RB_BLACK;
+                    sibling->color = RB_RED;
+                    rb_rotate_right(tree, sibling);
+                    sibling = node->parent->right;
+                }
+                sibling->color = parent->color;
+                parent->color = RB_BLACK;
+                sibling->right->color = RB_BLACK;
+                rb_rotate_left(tree, parent);
+                node = tree->root;
+            }
+        } else {
+            sibling = parent->left;
+            if (sibling->color == RB_RED) {
+                sibling->color = RB_BLACK;
+                parent->color = RB_RED;
+                rb_rotate_right(tree, parent);
+                sibling = parent->left;
+            }
+            if (sibling->left->color == sibling->right->color &&
+                sibling->right->color == RB_BLACK) {
+                sibling->color = RB_RED;
+                node = parent;
+            } else {
+                if (sibling->left->color == RB_BLACK) {
+                    sibling->right->color = RB_BLACK;
+                    sibling->color = RB_RED;
+                    rb_rotate_left(tree, sibling);
+                    sibling = node->parent->left;
+                }
+                sibling->color = parent->color;
+                parent->color = RB_BLACK;
+                sibling->left->color = RB_BLACK;
+                rb_rotate_right(tree, parent);
+                node = tree->root;
+            }
+        }
+    }
+    node->color = RB_BLACK;
+}
+
+bool rb_delete(RBTree *tree, int val) {
+    Node *z = rb_search(tree, val);
+    if (z == tree->nil)
+        return false;
+
+    Node *y = z;
+    NodeColor y_original_color = y->color;
+    Node *x;
+
+    if (z->left == tree->nil) {
+        x = z->right;
+        rb_transplant(tree, z, z->right);
+    } else if (z->right == tree->nil) {
+        x = z->left;
+        rb_transplant(tree, z, z->left);
+    } else {
+        y = rb_minimum(tree, z->right);
+        y_original_color = y->color;
+        x = y->right;
+        if (y != z->right) {
+            rb_transplant(tree, y, y->right);
+            y->right = z->right;
+            y->right->parent = y;
+        } else {
+            x->parent = y;
+        }
+        rb_transplant(tree, z, y);
+        y->left = z->left;
+        y->left->parent = y;
+        y->color = z->color;
+    }
+
+    if (y_original_color == RB_BLACK)
+        rb_delete_fixup(tree, x);
+
+    free(z);
+    tree->size--;
+    return true;
+};

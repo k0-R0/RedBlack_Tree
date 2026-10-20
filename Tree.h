@@ -36,5 +36,6 @@ void rb_postorder(RBTree *tree);
 void rb_rotate_left(RBTree *tree, Node *node);
 void rb_rotate_right(RBTree *tree, Node *node);
 bool rb_insert(RBTree *tree, int val);
+bool rb_delete(RBTree *tree, int val);
 
 #endif
